@@ -2,8 +2,9 @@ import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { logger } from "hono/logger";
 import { routes } from "./routes";
+import type { Context } from "./context";
 
-const app = new Hono();
+export const app = new Hono<Context>();
 
 app.use(logger()).use(cors());
 
