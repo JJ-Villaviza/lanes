@@ -1,12 +1,15 @@
 import { relations } from "drizzle-orm";
-import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
+import { pgEnum, pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { AccountTable, CompanyTable } from ".";
 import { SessionTable } from "./session";
+
+export const BranchType = pgEnum("branch_type", ["branch", "administrator"]);
 
 export const BranchTable = pgTable("branches", {
   id: uuid("id").primaryKey().defaultRandom(),
   name: text("name").notNull(),
   username: text("username").notNull(),
+  type: BranchType().notNull(),
 
   accountId: uuid("account_id").notNull(),
   companyId: uuid("company_id").notNull(),

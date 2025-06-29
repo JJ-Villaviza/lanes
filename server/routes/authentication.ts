@@ -90,6 +90,7 @@ export const authenticationRoutes = new Hono<Context>()
           .values({
             name,
             username,
+            type: "administrator",
             accountId: account.id,
             companyId: company.id,
           })
