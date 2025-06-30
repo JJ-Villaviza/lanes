@@ -6,6 +6,9 @@ export const CompanyTable = pgTable("companies", {
   id: uuid("id").primaryKey().defaultRandom(),
   businessName: text("business_name").notNull(),
   email: text("email").notNull(),
+  description: text("description"),
+  mission: text("mission"),
+  vision: text("vision"),
 
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
@@ -14,6 +17,7 @@ export const CompanyTable = pgTable("companies", {
     .notNull()
     .defaultNow()
     .$onUpdateFn(() => new Date()),
+  deletedAt: timestamp("deleted_at", { withTimezone: true, mode: "date" }),
 });
 
 export const CompanyRelation = relations(CompanyTable, ({ many }) => ({

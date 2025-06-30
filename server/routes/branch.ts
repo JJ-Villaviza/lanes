@@ -91,6 +91,37 @@ export const branchRoutes = new Hono<Context>()
       data: { ...branch },
     });
   })
+  .delete(
+    "/",
+    zValidator("query", IdSchema),
+    AdministratorMiddleware,
+    SessionMiddleware,
+    async (c) => {
+      const { id } = c.req.valid("query");
+      const user = c.get("user")!;
+
+      const deleted = await db
+        .delete(BranchTable)
+        .where(
+          and(
+            eq(BranchTable.id, id),
+            eq(BranchTable.companyId, user.companyId),
+            ne(BranchTable.type, "administrator")
+          )
+        );
+
+      if (!deleted) {
+        throw new HTTPException(404, {
+          message: "Branch not found or cannot be deleted",
+        });
+      }
+
+      return c.json<SuccessResponse>({
+        success: true,
+        message: "Successfully deleted branch",
+      });
+    }
+  )
   .patch(
     "/",
     zValidator("query", IdSchema),
@@ -134,7 +165,7 @@ export const branchRoutes = new Hono<Context>()
     }
   )
   .patch(
-    "/password/:id",
+    "/password",
     zValidator("form", branchPasswordUpdateSchema),
     zValidator("query", IdSchema),
     AdministratorMiddleware,
@@ -165,36 +196,5 @@ export const branchRoutes = new Hono<Context>()
           cause: { form: true },
         });
       }
-    }
-  )
-  .delete(
-    "/",
-    zValidator("query", IdSchema),
-    AdministratorMiddleware,
-    SessionMiddleware,
-    async (c) => {
-      const { id } = c.req.valid("query");
-      const user = c.get("user")!;
-
-      const deleted = await db
-        .delete(BranchTable)
-        .where(
-          and(
-            eq(BranchTable.id, id),
-            eq(BranchTable.companyId, user.companyId),
-            ne(BranchTable.type, "administrator")
-          )
-        );
-
-      if (!deleted) {
-        throw new HTTPException(404, {
-          message: "Branch not found or cannot be deleted",
-        });
-      }
-
-      return c.json<SuccessResponse>({
-        success: true,
-        message: "Successfully deleted branch",
-      });
     }
   );
