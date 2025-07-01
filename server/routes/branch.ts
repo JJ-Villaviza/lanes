@@ -18,7 +18,9 @@ import { HTTPException } from "hono/http-exception";
 import { DatabaseError } from "pg";
 
 export const branchRoutes = new Hono<Context>()
-  .basePath("/api/branch")
+  .basePath("/api/branch") // ? Base path for branch routes
+
+  // TODO: create route for additional branch
   .post(
     "/",
     zValidator("form", branchAddSchema),
@@ -33,7 +35,7 @@ export const branchRoutes = new Hono<Context>()
         const transaction = await db.transaction(async (tx) => {
           const [account] = await tx
             .insert(AccountTable)
-            .values({ password: hash })
+            .values({ password: hash, companyId: user.companyId })
             .returning({ id: AccountTable.id });
 
           const [branch] = await tx
@@ -72,6 +74,8 @@ export const branchRoutes = new Hono<Context>()
       }
     }
   )
+
+  // TODO: create route for reading branch details
   .get("/", zValidator("query", IdSchema), async (c) => {
     const { id } = c.req.valid("query");
 
@@ -91,6 +95,8 @@ export const branchRoutes = new Hono<Context>()
       data: { ...branch },
     });
   })
+
+  // TODO: create route for permanently remove branch
   .delete(
     "/",
     zValidator("query", IdSchema),
@@ -122,6 +128,8 @@ export const branchRoutes = new Hono<Context>()
       });
     }
   )
+
+  // TODO: create route for updating branch details
   .patch(
     "/",
     zValidator("query", IdSchema),
@@ -164,6 +172,8 @@ export const branchRoutes = new Hono<Context>()
       }
     }
   )
+
+  // TODO: create route for changing branch password
   .patch(
     "/password",
     zValidator("form", branchPasswordUpdateSchema),
@@ -181,7 +191,10 @@ export const branchRoutes = new Hono<Context>()
           .update(AccountTable)
           .set({ password: hash })
           .where(
-            and(eq(AccountTable.id, user.accountId), eq(AccountTable.id, id))
+            and(
+              eq(AccountTable.id, id),
+              eq(AccountTable.companyId, user.companyId)
+            )
           )
           .returning({ id: AccountTable.id });
 
@@ -196,5 +209,78 @@ export const branchRoutes = new Hono<Context>()
           cause: { form: true },
         });
       }
+    }
+  )
+
+  // TODO: create route for deactivating branch
+  .patch(
+    "/deactivate",
+    zValidator("query", IdSchema),
+    SessionMiddleware,
+    AdministratorMiddleware,
+    async (c) => {
+      const { id } = c.req.valid("query");
+      const user = c.get("user")!;
+      const date = new Date(Date.now());
+
+      const [update] = await db
+        .update(BranchTable)
+        .set({ deletedAt: date })
+        .where(
+          and(
+            eq(BranchTable.id, id),
+            eq(BranchTable.companyId, user.companyId),
+            eq(BranchTable.type, "branch")
+          )
+        )
+        .returning({ id: BranchTable.id, name: BranchTable.name });
+
+      if (!update) {
+        throw new HTTPException(404, {
+          message: "Branch not found or cannot be activated",
+        });
+      }
+
+      return c.json<SuccessResponse<{ id: string; name: string }>>({
+        success: true,
+        message: "Successfully activated branch",
+        data: { ...update },
+      });
+    }
+  )
+
+  // TODO: create route for activating branch
+  .patch(
+    "/activate",
+    zValidator("query", IdSchema),
+    SessionMiddleware,
+    AdministratorMiddleware,
+    async (c) => {
+      const { id } = c.req.valid("query");
+      const user = c.get("user")!;
+
+      const [update] = await db
+        .update(BranchTable)
+        .set({ deletedAt: null })
+        .where(
+          and(
+            eq(BranchTable.id, id),
+            eq(BranchTable.companyId, user.companyId),
+            eq(BranchTable.type, "branch")
+          )
+        )
+        .returning({ id: BranchTable.id, name: BranchTable.name });
+
+      if (!update) {
+        throw new HTTPException(404, {
+          message: "Branch not found or cannot be activated",
+        });
+      }
+
+      return c.json<SuccessResponse<{ id: string; name: string }>>({
+        success: true,
+        message: "Successfully activated branch",
+        data: { ...update },
+      });
     }
   );

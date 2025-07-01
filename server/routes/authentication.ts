@@ -22,7 +22,9 @@ import { HTTPException } from "hono/http-exception";
 import { DatabaseError } from "pg";
 
 export const authenticationRoutes = new Hono<Context>()
-  .basePath("/api/auth")
+  .basePath("/api/auth") // ? Base path for authentication routes
+
+  // TODO: create route for login
   .post("/login", zValidator("form", loginSchema), async (c) => {
     const { username, password } = c.req.valid("form");
 
@@ -68,6 +70,8 @@ export const authenticationRoutes = new Hono<Context>()
       200
     );
   })
+
+  // TODO: create route for register
   .post("/register", zValidator("form", registerSchema), async (c) => {
     const { name, businessName, email, username, password } =
       c.req.valid("form");
@@ -75,15 +79,15 @@ export const authenticationRoutes = new Hono<Context>()
 
     try {
       const insert = await db.transaction(async (tx) => {
-        const [account] = await tx
-          .insert(AccountTable)
-          .values({ password: hash })
-          .returning({ id: AccountTable.id });
-
         const [company] = await tx
           .insert(CompanyTable)
           .values({ businessName, email })
           .returning({ id: CompanyTable.id });
+
+        const [account] = await tx
+          .insert(AccountTable)
+          .values({ password: hash, companyId: company.id })
+          .returning({ id: AccountTable.id });
 
         const [branch] = await tx
           .insert(BranchTable)
@@ -119,6 +123,8 @@ export const authenticationRoutes = new Hono<Context>()
       throw new HTTPException(500, { message: "Failed to create account" });
     }
   })
+
+  // TODO: create route for sign-out
   .get("/sign-out", SessionMiddleware, async (c) => {
     const session = c.get("session")!;
     if (!session) {

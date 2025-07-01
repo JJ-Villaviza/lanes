@@ -6,6 +6,8 @@ export const AccountTable = pgTable("accounts", {
   id: uuid("id").primaryKey().defaultRandom(),
   password: text("password").notNull(),
 
+  companyId: uuid("company_id").notNull(),
+
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()
     .defaultNow(),

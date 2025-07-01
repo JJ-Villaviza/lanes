@@ -4,8 +4,8 @@ import { BranchTable } from ".";
 
 export const CompanyTable = pgTable("companies", {
   id: uuid("id").primaryKey().defaultRandom(),
-  businessName: text("business_name").notNull(),
-  email: text("email").notNull(),
+  businessName: text("business_name").notNull().unique(),
+  email: text("email").notNull().unique(),
   description: text("description"),
   mission: text("mission"),
   vision: text("vision"),

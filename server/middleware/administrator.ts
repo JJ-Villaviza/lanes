@@ -6,9 +6,9 @@ export const AdministratorMiddleware = createMiddleware<Context>(
   async (c, next) => {
     const user = c.get("user");
 
-    if (user && user.type === "administrator") {
+    if (user && user.type === "branch") {
       throw new HTTPException(401, {
-        message: "Administrator access is not allowed for this route.",
+        message: "Unauthorized access",
       });
     }
 

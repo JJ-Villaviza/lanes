@@ -4,6 +4,7 @@ import { BranchTable, CompanyTable } from "@/database/schemas";
 import { AdministratorMiddleware } from "@/middleware/administrator";
 import { SessionMiddleware } from "@/middleware/session";
 import type { SuccessResponse } from "@/shared/response";
+import type { CompanyBranches } from "@/shared/types/routes";
 import type { BranchType, CompanyType } from "@/shared/types/schemas";
 import { CompanySchema } from "@/shared/validations/company";
 import { IdSchema } from "@/shared/validations/id";
@@ -14,7 +15,9 @@ import { HTTPException } from "hono/http-exception";
 import { DatabaseError } from "pg";
 
 export const companyRoutes = new Hono<Context>()
-  .basePath("/api/company")
+  .basePath("/api/company") // ? Base path for company routes
+
+  // TODO: create route for additional details of company
   .patch(
     "/",
     zValidator("form", CompanySchema),
@@ -58,6 +61,8 @@ export const companyRoutes = new Hono<Context>()
       }
     }
   )
+
+  // TODO: create route for getting company details
   .get("/", zValidator("query", IdSchema), async (c) => {
     const { id } = c.req.valid("query");
 
@@ -79,6 +84,7 @@ export const companyRoutes = new Hono<Context>()
     });
   })
 
+  // TODO: create route for getting branches of a company
   .get("/list", zValidator("query", IdSchema), async (c) => {
     const { id } = c.req.valid("query");
 
@@ -98,4 +104,142 @@ export const companyRoutes = new Hono<Context>()
       message: "Branches list:",
       data: [...list],
     });
-  });
+  })
+
+  // TODO: create route for deactivating company
+  .patch(
+    "/deactivate",
+    zValidator("query", IdSchema),
+    SessionMiddleware,
+    AdministratorMiddleware,
+    async (c) => {
+      const { id } = c.req.valid("query");
+      const user = c.get("user")!;
+      const date = new Date(Date.now());
+
+      const [company] = await db
+        .update(CompanyTable)
+        .set({ deletedAt: null })
+        .where(
+          and(eq(CompanyTable.id, id), eq(CompanyTable.id, user.companyId))
+        )
+        .returning({
+          id: CompanyTable.id,
+          businessName: CompanyTable.businessName,
+        });
+
+      const branches = await db
+        .update(BranchTable)
+        .set({ deletedAt: date })
+        .where(
+          and(
+            eq(BranchTable.companyId, id),
+            eq(BranchTable.companyId, user.companyId),
+            eq(BranchTable.type, "branch")
+          )
+        )
+        .returning({ id: BranchTable.id, name: BranchTable.name });
+
+      return c.json<SuccessResponse<CompanyBranches>>({
+        success: true,
+        message: "Successfully activated company",
+        data: {
+          id: company.id,
+          company: company.businessName,
+          branches: [...branches],
+        },
+      });
+    }
+  )
+
+  // TODO: create route for activating company
+  .patch(
+    "/activate",
+    zValidator("query", IdSchema),
+    SessionMiddleware,
+    AdministratorMiddleware,
+    async (c) => {
+      const { id } = c.req.valid("query");
+      const user = c.get("user")!;
+
+      const [company] = await db
+        .update(CompanyTable)
+        .set({ deletedAt: null })
+        .where(
+          and(eq(CompanyTable.id, id), eq(CompanyTable.id, user.companyId))
+        )
+        .returning({
+          id: CompanyTable.id,
+          businessName: CompanyTable.businessName,
+        });
+      if (!company) {
+        throw new HTTPException(404, {
+          message: "Company not found or cannot be activated",
+        });
+      }
+
+      const branches = await db
+        .update(BranchTable)
+        .set({ deletedAt: null })
+        .where(
+          and(
+            eq(BranchTable.companyId, id),
+            eq(BranchTable.companyId, user.companyId),
+            eq(BranchTable.type, "branch")
+          )
+        )
+        .returning({ id: BranchTable.id, name: BranchTable.name });
+
+      return c.json<SuccessResponse<CompanyBranches>>({
+        success: true,
+        message: "Successfully activated company",
+        data: {
+          id: company.id,
+          company: company.businessName,
+          branches: [...branches],
+        },
+      });
+    }
+  )
+
+  // TODO: create route for permanently removing company
+  .delete(
+    "/",
+    zValidator("query", IdSchema),
+    SessionMiddleware,
+    AdministratorMiddleware,
+    async (c) => {
+      const { id } = c.req.valid("query");
+      const user = c.get("user")!;
+
+      const [company] = await db
+        .delete(CompanyTable)
+        .where(
+          and(eq(CompanyTable.id, id), eq(CompanyTable.id, user.companyId))
+        )
+        .returning({
+          id: CompanyTable.id,
+          businessName: CompanyTable.businessName,
+        });
+
+      const branches = await db
+        .delete(BranchTable)
+        .where(
+          and(
+            eq(BranchTable.companyId, company.id),
+            eq(BranchTable.companyId, user.companyId)
+          )
+        )
+        .returning({ id: BranchTable.id, name: BranchTable.name });
+
+      return c.json<SuccessResponse<CompanyBranches>>({
+        success: true,
+        message: "Successfully permanently remove company",
+        data: {
+          id: company.id,
+          company: company.businessName,
+          branches: [...branches],
+        },
+      });
+    }
+  );

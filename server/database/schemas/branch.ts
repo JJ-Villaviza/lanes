@@ -7,8 +7,8 @@ export const BranchType = pgEnum("branch_type", ["branch", "administrator"]);
 
 export const BranchTable = pgTable("branches", {
   id: uuid("id").primaryKey().defaultRandom(),
-  name: text("name").notNull(),
-  username: text("username").notNull(),
+  name: text("name").notNull().unique(),
+  username: text("username").notNull().unique(),
   type: BranchType().notNull(),
 
   accountId: uuid("account_id").notNull(),
