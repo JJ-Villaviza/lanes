@@ -4,8 +4,6 @@ import { BranchTable, CompanyTable } from "@/database/schemas";
 import { AdministratorMiddleware } from "@/middleware/administrator";
 import { SessionMiddleware } from "@/middleware/session";
 import type { SuccessResponse } from "@/shared/response";
-import type { CompanyBranches } from "@/shared/types/routes";
-import type { BranchType, CompanyType } from "@/shared/types/schemas";
 import { CompanySchema } from "@/shared/validations/company";
 import { IdSchema } from "@/shared/validations/id";
 import { zValidator } from "@hono/zod-validator";
@@ -39,7 +37,19 @@ export const companyRoutes = new Hono<Context>()
           )
           .returning();
 
-        return c.json<SuccessResponse<CompanyType>>(
+        return c.json<
+          SuccessResponse<{
+            id: string;
+            businessName: string;
+            email: string;
+            description: string | null;
+            mission: string | null;
+            vision: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+          }>
+        >(
           {
             success: true,
             message: "Successfully updated company",
@@ -77,7 +87,19 @@ export const companyRoutes = new Hono<Context>()
       });
     }
 
-    return c.json<SuccessResponse<CompanyType>>({
+    return c.json<
+      SuccessResponse<{
+        id: string;
+        businessName: string;
+        email: string;
+        description: string | null;
+        mission: string | null;
+        vision: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+      }>
+    >({
       success: true,
       message: "Company details:",
       data: { ...company },
@@ -88,21 +110,35 @@ export const companyRoutes = new Hono<Context>()
   .get("/list", zValidator("query", IdSchema), async (c) => {
     const { id } = c.req.valid("query");
 
-    const list = await db
+    const [list] = await db
       .select()
       .from(BranchTable)
       .where(eq(BranchTable.companyId, id));
 
-    if (list.length === 0) {
+    if (list === null) {
       throw new HTTPException(404, {
         message: "No branches found for this company",
       });
     }
 
-    return c.json<SuccessResponse<BranchType[]>>({
+    return c.json<
+      SuccessResponse<
+        {
+          id: string;
+          name: string;
+          username: string;
+          type: string;
+          accountId: string;
+          companyId: string;
+          createdAt: Date;
+          updatedAt: Date;
+          deletedAt: Date | null;
+        }[]
+      >
+    >({
       success: true,
       message: "Branches list:",
-      data: [...list],
+      data: [list],
     });
   })
 
@@ -140,7 +176,16 @@ export const companyRoutes = new Hono<Context>()
         )
         .returning({ id: BranchTable.id, name: BranchTable.name });
 
-      return c.json<SuccessResponse<CompanyBranches>>({
+      return c.json<
+        SuccessResponse<{
+          id: string;
+          company: string;
+          branches: {
+            id: string;
+            name: string;
+          }[];
+        }>
+      >({
         success: true,
         message: "Successfully activated company",
         data: {
@@ -190,7 +235,13 @@ export const companyRoutes = new Hono<Context>()
         )
         .returning({ id: BranchTable.id, name: BranchTable.name });
 
-      return c.json<SuccessResponse<CompanyBranches>>({
+      return c.json<
+        SuccessResponse<{
+          id: string;
+          company: string;
+          branches: { id: string; name: string }[];
+        }>
+      >({
         success: true,
         message: "Successfully activated company",
         data: {
@@ -232,7 +283,13 @@ export const companyRoutes = new Hono<Context>()
         )
         .returning({ id: BranchTable.id, name: BranchTable.name });
 
-      return c.json<SuccessResponse<CompanyBranches>>({
+      return c.json<
+        SuccessResponse<{
+          id: string;
+          company: string;
+          branches: { id: string; name: string }[];
+        }>
+      >({
         success: true,
         message: "Successfully permanently remove company",
         data: {

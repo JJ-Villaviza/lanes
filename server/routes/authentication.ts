@@ -9,7 +9,6 @@ import {
 import { SessionMiddleware } from "@/middleware/session";
 import { env } from "@/shared/env";
 import type { SuccessResponse } from "@/shared/response";
-import type { BranchType } from "@/shared/types/schemas";
 import {
   loginSchema,
   registerSchema,
@@ -105,7 +104,19 @@ export const authenticationRoutes = new Hono<Context>()
         };
       });
 
-      return c.json<SuccessResponse<BranchType>>(
+      return c.json<
+        SuccessResponse<{
+          id: string;
+          name: string;
+          username: string;
+          type: string;
+          accountId: string;
+          companyId: string;
+          createdAt: Date;
+          updatedAt: Date;
+          deletedAt: Date | null;
+        }>
+      >(
         {
           success: true,
           message: "Successfully registered",
@@ -136,8 +147,24 @@ export const authenticationRoutes = new Hono<Context>()
   })
   .get("/", SessionMiddleware, async (c) => {
     const user = c.get("user")!;
-    return c.json<SuccessResponse<BranchType>>(
-      { success: true, message: "Branch Details", data: { ...user } },
+    return c.json<
+      SuccessResponse<{
+        id: string;
+        name: string;
+        username: string;
+        type: string;
+        accountId: string;
+        companyId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+      }>
+    >(
+      {
+        success: true,
+        message: "Branch Details",
+        data: { ...user },
+      },
       200
     );
   });

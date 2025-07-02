@@ -4,7 +4,6 @@ import { AccountTable, BranchTable } from "@/database/schemas";
 import { AdministratorMiddleware } from "@/middleware/administrator";
 import { SessionMiddleware } from "@/middleware/session";
 import type { SuccessResponse } from "@/shared/response";
-import type { BranchType } from "@/shared/types/schemas";
 import {
   branchAddSchema,
   branchPasswordUpdateSchema,
@@ -52,7 +51,19 @@ export const branchRoutes = new Hono<Context>()
           return { ...branch };
         });
 
-        return c.json<SuccessResponse<BranchType>>(
+        return c.json<
+          SuccessResponse<{
+            id: string;
+            name: string;
+            username: string;
+            type: string;
+            accountId: string;
+            companyId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+          }>
+        >(
           {
             success: true,
             message: "Successfully created branch",
@@ -89,7 +100,19 @@ export const branchRoutes = new Hono<Context>()
       });
     }
 
-    return c.json<SuccessResponse<BranchType>>({
+    return c.json<
+      SuccessResponse<{
+        id: string;
+        name: string;
+        username: string;
+        type: string;
+        accountId: string;
+        companyId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+      }>
+    >({
       success: true,
       message: "Branch",
       data: { ...branch },
@@ -153,7 +176,19 @@ export const branchRoutes = new Hono<Context>()
           )
           .returning();
 
-        return c.json<SuccessResponse<BranchType>>({
+        return c.json<
+          SuccessResponse<{
+            id: string;
+            name: string;
+            username: string;
+            type: string;
+            accountId: string;
+            companyId: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+          }>
+        >({
           success: true,
           message: "Successfully updated branch",
           data: { ...update },
