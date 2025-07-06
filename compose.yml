@@ -12,6 +12,16 @@ services:
     ports:
       - 5432:${DATABASE_PORT}
 
+  pgadmin:
+    image: dpage/pgadmin4
+    environment:
+      - PGADMIN_DEFAULT_EMAIL=${DATABASE_PANEL_EMAIL}
+      - PGADMIN_DEFAULT_PASSWORD=${DATABASE_PANEL_PASSWORD}
+    ports:
+      - 8080:${DATABASE_PANEL_PORT}
+    depends_on:
+      - db
+
 networks:
   lanes-network:
     driver: bridge

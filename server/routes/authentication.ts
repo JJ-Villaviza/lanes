@@ -61,10 +61,23 @@ export const authenticationRoutes = new Hono<Context>()
 
     setCookie(c, env.SESSION_TOKEN, cookie.token);
 
-    return c.json<SuccessResponse>(
+    return c.json<
+      SuccessResponse<{
+        id: string;
+        name: string;
+        username: string;
+        type: string;
+        accountId: string;
+        companyId: string;
+        createdAt: Date;
+        updatedAt: Date;
+        deletedAt: Date | null;
+      }>
+    >(
       {
         success: true,
         message: "Successfully login",
+        data: { ...existing },
       },
       200
     );
@@ -77,7 +90,7 @@ export const authenticationRoutes = new Hono<Context>()
     const hash = await Bun.password.hash(password);
 
     try {
-      const insert = await db.transaction(async (tx) => {
+      await db.transaction(async (tx) => {
         const [company] = await tx
           .insert(CompanyTable)
           .values({ businessName, email })
@@ -104,23 +117,10 @@ export const authenticationRoutes = new Hono<Context>()
         };
       });
 
-      return c.json<
-        SuccessResponse<{
-          id: string;
-          name: string;
-          username: string;
-          type: string;
-          accountId: string;
-          companyId: string;
-          createdAt: Date;
-          updatedAt: Date;
-          deletedAt: Date | null;
-        }>
-      >(
+      return c.json<SuccessResponse>(
         {
           success: true,
           message: "Successfully registered",
-          data: { ...insert },
         },
         201
       );

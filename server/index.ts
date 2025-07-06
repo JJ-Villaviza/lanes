@@ -9,7 +9,9 @@ import { env } from "@/shared/env";
 
 export const app = new Hono<Context>();
 
-app.use(logger()).use(cors());
+app
+  .use(logger())
+  .use(cors({ origin: "http://localhost:3001", credentials: true }));
 
 routes.forEach((route) => app.route("/", route));
 
