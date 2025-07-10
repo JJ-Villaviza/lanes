@@ -4,7 +4,10 @@ import { BranchTable, CompanyTable } from "@/database/schemas";
 import { AdministratorMiddleware } from "@/middleware/administrator";
 import { SessionMiddleware } from "@/middleware/session";
 import type { SuccessResponse } from "@/shared/response";
-import { CompanySchema } from "@/shared/validations/company";
+import {
+  companySchema,
+  updateCompanySchema,
+} from "@/shared/validations/company";
 import { IdSchema } from "@/shared/validations/id";
 import { zValidator } from "@hono/zod-validator";
 import { and, eq } from "drizzle-orm";
@@ -15,26 +18,28 @@ import { DatabaseError } from "pg";
 export const companyRoutes = new Hono<Context>()
   .basePath("/api/company") // ? Base path for company routes
 
-  // TODO: create route for additional details of company
-  .patch(
+  // TODO: create route for setting company details
+  .post(
     "/",
-    zValidator("form", CompanySchema),
-    zValidator("query", IdSchema),
+    zValidator("form", companySchema),
     AdministratorMiddleware,
     SessionMiddleware,
     async (c) => {
       const { businessName, email, description, mission, vision } =
         c.req.valid("form");
-      const { id } = c.req.valid("query");
       const user = c.get("user")!;
 
       try {
-        const [update] = await db
-          .update(CompanyTable)
-          .set({ businessName, email, description, mission, vision })
-          .where(
-            and(eq(CompanyTable.id, id), eq(CompanyTable.id, user.companyId))
-          )
+        const [company] = await db
+          .insert(CompanyTable)
+          .values({
+            id: user.companyId,
+            businessName,
+            email,
+            description,
+            mission,
+            vision,
+          })
           .returning();
 
         return c.json<
@@ -42,9 +47,65 @@ export const companyRoutes = new Hono<Context>()
             id: string;
             businessName: string;
             email: string;
-            description: string | null;
-            mission: string | null;
-            vision: string | null;
+            description: string;
+            mission: string;
+            vision: string;
+            createdAt: Date;
+            updatedAt: Date;
+            deletedAt: Date | null;
+          }>
+        >({
+          success: true,
+          message: "Company details completed!",
+          data: { ...company },
+        });
+      } catch (error) {
+        if (error instanceof DatabaseError && error.code === "23505") {
+          throw new HTTPException(409, {
+            message: "Details already exists",
+            cause: { form: true },
+          });
+        }
+        throw new HTTPException(500, {
+          message: "Failed to set company details",
+          cause: { form: true },
+        });
+      }
+    }
+  )
+
+  // TODO: create route for company details
+  .patch(
+    "/",
+    zValidator("form", updateCompanySchema),
+    AdministratorMiddleware,
+    SessionMiddleware,
+    async (c) => {
+      const { businessName, email, description, mission, vision } =
+        c.req.valid("form");
+      const user = c.get("user")!;
+
+      try {
+        const [update] = await db
+          .update(CompanyTable)
+          .set({
+            businessName,
+            email,
+            description,
+            mission,
+            vision,
+          })
+          .where(and(eq(CompanyTable.id, user.companyId)))
+          .returning();
+
+        return c.json<
+          SuccessResponse<{
+            id: string;
+            businessName: string;
+            email: string;
+            description: string;
+            mission: string;
+            vision: string;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
@@ -92,9 +153,9 @@ export const companyRoutes = new Hono<Context>()
         id: string;
         businessName: string;
         email: string;
-        description: string | null;
-        mission: string | null;
-        vision: string | null;
+        description: string;
+        mission: string;
+        vision: string;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
@@ -157,7 +218,7 @@ export const companyRoutes = new Hono<Context>()
         .update(CompanyTable)
         .set({ deletedAt: null })
         .where(
-          and(eq(CompanyTable.id, id), eq(CompanyTable.id, user.companyId))
+          and(eq(CompanyTable.id, id), eq(CompanyTable.id, user.companyId!))
         )
         .returning({
           id: CompanyTable.id,
@@ -170,7 +231,7 @@ export const companyRoutes = new Hono<Context>()
         .where(
           and(
             eq(BranchTable.companyId, id),
-            eq(BranchTable.companyId, user.companyId),
+            eq(BranchTable.companyId, user.companyId!),
             eq(BranchTable.type, "branch")
           )
         )
@@ -211,7 +272,7 @@ export const companyRoutes = new Hono<Context>()
         .update(CompanyTable)
         .set({ deletedAt: null })
         .where(
-          and(eq(CompanyTable.id, id), eq(CompanyTable.id, user.companyId))
+          and(eq(CompanyTable.id, id), eq(CompanyTable.id, user.companyId!))
         )
         .returning({
           id: CompanyTable.id,
@@ -229,7 +290,7 @@ export const companyRoutes = new Hono<Context>()
         .where(
           and(
             eq(BranchTable.companyId, id),
-            eq(BranchTable.companyId, user.companyId),
+            eq(BranchTable.companyId, user.companyId!),
             eq(BranchTable.type, "branch")
           )
         )
@@ -266,7 +327,7 @@ export const companyRoutes = new Hono<Context>()
       const [company] = await db
         .delete(CompanyTable)
         .where(
-          and(eq(CompanyTable.id, id), eq(CompanyTable.id, user.companyId))
+          and(eq(CompanyTable.id, id), eq(CompanyTable.id, user.companyId!))
         )
         .returning({
           id: CompanyTable.id,
@@ -278,7 +339,7 @@ export const companyRoutes = new Hono<Context>()
         .where(
           and(
             eq(BranchTable.companyId, company.id),
-            eq(BranchTable.companyId, user.companyId)
+            eq(BranchTable.companyId, user.companyId!)
           )
         )
         .returning({ id: BranchTable.id, name: BranchTable.name });

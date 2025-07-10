@@ -4,8 +4,8 @@ import { AccountTable, BranchTable } from "@/database/schemas";
 import { AdministratorMiddleware } from "@/middleware/administrator";
 import { SessionMiddleware } from "@/middleware/session";
 import type { SuccessResponse } from "@/shared/response";
+import { registerSchema } from "@/shared/validations/authentication";
 import {
-  branchAddSchema,
   branchPasswordUpdateSchema,
   branchUpdateSchema,
 } from "@/shared/validations/branch";
@@ -22,7 +22,7 @@ export const branchRoutes = new Hono<Context>()
   // TODO: create route for additional branch
   .post(
     "/",
-    zValidator("form", branchAddSchema),
+    zValidator("form", registerSchema),
     AdministratorMiddleware,
     SessionMiddleware,
     async (c) => {
@@ -58,7 +58,7 @@ export const branchRoutes = new Hono<Context>()
             username: string;
             type: string;
             accountId: string;
-            companyId: string;
+            companyId: string | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
@@ -107,7 +107,7 @@ export const branchRoutes = new Hono<Context>()
         username: string;
         type: string;
         accountId: string;
-        companyId: string;
+        companyId: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
@@ -134,7 +134,7 @@ export const branchRoutes = new Hono<Context>()
         .where(
           and(
             eq(BranchTable.id, id),
-            eq(BranchTable.companyId, user.companyId),
+            eq(BranchTable.companyId, user.companyId!),
             ne(BranchTable.type, "administrator")
           )
         );
@@ -171,7 +171,7 @@ export const branchRoutes = new Hono<Context>()
           .where(
             and(
               eq(BranchTable.id, id),
-              eq(BranchTable.companyId, user.companyId)
+              eq(BranchTable.companyId, user.companyId!)
             )
           )
           .returning();
@@ -183,7 +183,7 @@ export const branchRoutes = new Hono<Context>()
             username: string;
             type: string;
             accountId: string;
-            companyId: string;
+            companyId: string | null;
             createdAt: Date;
             updatedAt: Date;
             deletedAt: Date | null;
@@ -228,7 +228,7 @@ export const branchRoutes = new Hono<Context>()
           .where(
             and(
               eq(AccountTable.id, id),
-              eq(AccountTable.companyId, user.companyId)
+              eq(AccountTable.companyId, user.companyId!)
             )
           )
           .returning({ id: AccountTable.id });
@@ -264,7 +264,7 @@ export const branchRoutes = new Hono<Context>()
         .where(
           and(
             eq(BranchTable.id, id),
-            eq(BranchTable.companyId, user.companyId),
+            eq(BranchTable.companyId, user.companyId!),
             eq(BranchTable.type, "branch")
           )
         )
@@ -300,7 +300,7 @@ export const branchRoutes = new Hono<Context>()
         .where(
           and(
             eq(BranchTable.id, id),
-            eq(BranchTable.companyId, user.companyId),
+            eq(BranchTable.companyId, user.companyId!),
             eq(BranchTable.type, "branch")
           )
         )

@@ -1,14 +1,18 @@
 export type AuthResUser = {
-  id: string;
-  name: string;
-  username: string;
-  type: string;
-  accountId: string;
-  companyId: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-} | null;
+  success: boolean;
+  message: string;
+  data: {
+    id: string;
+    name: string;
+    username: string;
+    type: string;
+    accountId: string;
+    companyId: string;
+    createdAt: string;
+    updatedAt: string;
+    deletedAt: string | null;
+  } | null;
+};
 
 export type AuthState =
   | { user: null; status: "PENDING" }

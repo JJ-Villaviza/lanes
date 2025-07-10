@@ -3,12 +3,12 @@ import { pgTable, text, timestamp, uuid } from "drizzle-orm/pg-core";
 import { BranchTable } from ".";
 
 export const CompanyTable = pgTable("companies", {
-  id: uuid("id").primaryKey().defaultRandom(),
+  id: uuid("id").primaryKey(),
   businessName: text("business_name").notNull().unique(),
   email: text("email").notNull().unique(),
-  description: text("description"),
-  mission: text("mission"),
-  vision: text("vision"),
+  description: text("description").notNull(),
+  mission: text("mission").notNull(),
+  vision: text("vision").notNull(),
 
   createdAt: timestamp("created_at", { withTimezone: true, mode: "date" })
     .notNull()

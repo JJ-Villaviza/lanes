@@ -1,11 +1,6 @@
 import type { Context } from "@/context";
 import { db } from "@/database";
-import {
-  AccountTable,
-  BranchTable,
-  CompanyTable,
-  SessionTable,
-} from "@/database/schemas";
+import { AccountTable, BranchTable, SessionTable } from "@/database/schemas";
 import { SessionMiddleware } from "@/middleware/session";
 import { env } from "@/shared/env";
 import type { SuccessResponse } from "@/shared/response";
@@ -68,7 +63,7 @@ export const authenticationRoutes = new Hono<Context>()
         username: string;
         type: string;
         accountId: string;
-        companyId: string;
+        companyId: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;
@@ -85,21 +80,19 @@ export const authenticationRoutes = new Hono<Context>()
 
   // TODO: create route for register
   .post("/register", zValidator("form", registerSchema), async (c) => {
-    const { name, businessName, email, username, password } =
-      c.req.valid("form");
+    const { name, username, password } = c.req.valid("form");
     const hash = await Bun.password.hash(password);
+    const companyId = crypto.randomUUID();
 
     try {
       await db.transaction(async (tx) => {
-        const [company] = await tx
-          .insert(CompanyTable)
-          .values({ businessName, email })
-          .returning({ id: CompanyTable.id });
-
         const [account] = await tx
           .insert(AccountTable)
-          .values({ password: hash, companyId: company.id })
-          .returning({ id: AccountTable.id });
+          .values({ password: hash, companyId })
+          .returning({
+            id: AccountTable.id,
+            companyId: AccountTable.companyId,
+          });
 
         const [branch] = await tx
           .insert(BranchTable)
@@ -108,7 +101,7 @@ export const authenticationRoutes = new Hono<Context>()
             username,
             type: "administrator",
             accountId: account.id,
-            companyId: company.id,
+            companyId,
           })
           .returning();
 
@@ -154,7 +147,7 @@ export const authenticationRoutes = new Hono<Context>()
         username: string;
         type: string;
         accountId: string;
-        companyId: string;
+        companyId: string | null;
         createdAt: Date;
         updatedAt: Date;
         deletedAt: Date | null;

@@ -1,11 +1,6 @@
 import { registerSchema } from "./authentication";
 
-export const branchAddSchema = registerSchema.omit({
-  businessName: true,
-  email: true,
-});
-
-export const branchUpdateSchema = branchAddSchema
+export const branchUpdateSchema = registerSchema
   .omit({ password: true })
   .partial();
 
